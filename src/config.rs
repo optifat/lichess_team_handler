@@ -5,6 +5,7 @@ pub const CONFIG_FILE: &str = "config.json";
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
+    pub blacklist_file: String,
     pub team: String,
     pub authorization_token: String,
 }

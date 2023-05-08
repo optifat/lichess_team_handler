@@ -62,27 +62,39 @@ pub async fn handle_join_requests(
     token: &str,
     requests: &Vec<TeamJoinResponse>,
     cheaters: &HashSet<String>,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<(u32, u32)> {
+    let mut approved = 0;
+    let mut declined = 0;
     futures::future::join_all(requests.iter().map(|user| {
         let user_id = &user.user.id;
         let client = reqwest::Client::new();
         match cheaters.get(user_id) {
-            Some(_) => client
-                .post(format!(
-                    "https://lichess.org/api/team/{}/request/{}/decline",
-                    team_id, user_id
-                ))
-                .bearer_auth(token)
-                .send(),
-            None => client
-                .post(format!(
-                    "https://lichess.org/api/team/{}/request/{}/accept",
-                    team_id, user_id
-                ))
-                .bearer_auth(token)
-                .send(),
+            Some(_) => {
+                declined += 1;
+                #[cfg(feature = "full_info")]
+                println!("{}: Declined ❌", user_id);
+                client
+                    .post(format!(
+                        "https://lichess.org/api/team/{}/request/{}/decline",
+                        team_id, user_id
+                    ))
+                    .bearer_auth(token)
+                    .send()
+            }
+            None => {
+                approved += 1;
+                #[cfg(feature = "full_info")]
+                println!("{}: Approved ✅", user_id);
+                client
+                    .post(format!(
+                        "https://lichess.org/api/team/{}/request/{}/accept",
+                        team_id, user_id
+                    ))
+                    .bearer_auth(token)
+                    .send()
+            }
         }
     }))
     .await;
-    Ok(())
+    Ok((approved, declined))
 }
