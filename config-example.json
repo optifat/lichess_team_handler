@@ -1,0 +1,5 @@
+{
+    "blacklistFile": "blacklist-example",
+    "team": "my-example-team",
+    "authorizationToken": "lip_thisIsMyExampleToken"
+}
