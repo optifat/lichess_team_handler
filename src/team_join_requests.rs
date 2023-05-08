@@ -19,55 +19,46 @@ struct Request {
 struct User {
     created_at: u64,
     id: String,
-    perfs: HashMap<String, Perf>,
     play_time: HashMap<String, u64>,
-    profile: HashMap<String, String>,
-    sent_at: u64,
+    profile: Option<HashMap<String, String>>,
+    seen_at: u64,
     username: String,
     title: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)]
-struct Perf {
-    games: u32,
-    prog: u32,
-    prov: bool,
-    rating: u32,
-    rd: u32,
-}
-
-#[derive(Debug, Deserialize)]
-#[allow(dead_code)]
-pub struct TeamJoinResponse {
+pub struct TeamJoinRequest {
     request: Request,
     user: User,
 }
 
-pub async fn get_join_requests(
-    team_id: &str,
-    token: &str,
-) -> anyhow::Result<Vec<TeamJoinResponse>> {
+pub async fn get_join_requests(team_id: &str, token: &str) -> anyhow::Result<Vec<TeamJoinRequest>> {
     let client = reqwest::Client::new();
     let resp = client
         .get(format!("https://lichess.org/api/team/{}/requests", team_id))
         .bearer_auth(token)
         .send()
         .await?;
-    Ok(resp.json::<Vec<TeamJoinResponse>>().await?)
+    let join_requests = resp.json::<Vec<TeamJoinRequest>>().await?;
+
+    Ok(join_requests
+        .into_iter()
+        .filter(|request| request.request.team_id == team_id)
+        .collect())
 }
 
 pub async fn handle_join_requests(
     team_id: &str,
     token: &str,
-    requests: &Vec<TeamJoinResponse>,
+    requests: &Vec<TeamJoinRequest>,
     cheaters: &HashSet<String>,
 ) -> anyhow::Result<(u32, u32)> {
     let mut approved = 0;
     let mut declined = 0;
+    let client = reqwest::Client::new();
     futures::future::join_all(requests.iter().map(|user| {
         let user_id = &user.user.id;
-        let client = reqwest::Client::new();
         match cheaters.get(user_id) {
             Some(_) => {
                 declined += 1;

@@ -19,7 +19,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         println!("Getting join requests");
         let join_requests =
-            team_join_requests::get_join_requests(authorization_token, team_id).await?;
+            team_join_requests::get_join_requests(team_id, authorization_token).await?;
         println!("Got all join requests: {} in total", join_requests.len());
 
         #[cfg(feature = "full_info")]
@@ -28,8 +28,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let cheaters = cheaters_list::read_blacklist_file(blacklist_file)?;
 
         let (approved, declined) = team_join_requests::handle_join_requests(
-            authorization_token,
             team_id,
+            authorization_token,
             &join_requests,
             &cheaters,
         )

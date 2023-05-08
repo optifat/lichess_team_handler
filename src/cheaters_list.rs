@@ -12,6 +12,7 @@ pub fn read_blacklist_file(path: &str) -> anyhow::Result<HashSet<String>> {
         .into_iter()
         .map(|cheater| cheater.map(|id| id.to_lowercase()))
         .collect::<Result<HashSet<String>, _>>()?;
-    println!("{:?}", cheaters);
+    #[cfg(feature = "full_info")]
+    println!("List of known cheaters: \n{:?}\n", cheaters);
     Ok(cheaters)
 }
