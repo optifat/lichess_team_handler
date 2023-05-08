@@ -1,3 +1,4 @@
+use reqwest::Response;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 
@@ -57,6 +58,7 @@ pub async fn handle_join_requests(
     let mut approved = 0;
     let mut declined = 0;
     let client = reqwest::Client::new();
+
     futures::future::join_all(requests.iter().map(|user| {
         let user_id = &user.user.id;
         match cheaters.get(user_id) {
@@ -86,6 +88,9 @@ pub async fn handle_join_requests(
             }
         }
     }))
-    .await;
+    .await
+    .into_iter()
+    .collect::<Result<Vec<Response>, _>>()?;
+
     Ok((approved, declined))
 }
