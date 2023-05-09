@@ -61,31 +61,28 @@ pub async fn handle_join_requests(
 
     futures::future::join_all(requests.iter().map(|user| {
         let user_id = &user.user.id;
-        match cheaters.get(user_id) {
-            Some(_) => {
-                declined += 1;
-                #[cfg(feature = "full_info")]
-                println!("{}: Declined ❌", user_id);
-                client
-                    .post(format!(
-                        "https://lichess.org/api/team/{}/request/{}/decline",
-                        team_id, user_id
-                    ))
-                    .bearer_auth(token)
-                    .send()
-            }
-            None => {
-                approved += 1;
-                #[cfg(feature = "full_info")]
-                println!("{}: Approved ✅", user_id);
-                client
-                    .post(format!(
-                        "https://lichess.org/api/team/{}/request/{}/accept",
-                        team_id, user_id
-                    ))
-                    .bearer_auth(token)
-                    .send()
-            }
+        if cheaters.contains(user_id) {
+            declined += 1;
+            #[cfg(feature = "full_info")]
+            println!("{}: Declined ❌", user_id);
+            client
+                .post(format!(
+                    "https://lichess.org/api/team/{}/request/{}/decline",
+                    team_id, user_id
+                ))
+                .bearer_auth(token)
+                .send()
+        } else {
+            approved += 1;
+            #[cfg(feature = "full_info")]
+            println!("{}: Approved ✅", user_id);
+            client
+                .post(format!(
+                    "https://lichess.org/api/team/{}/request/{}/accept",
+                    team_id, user_id
+                ))
+                .bearer_auth(token)
+                .send()
         }
     }))
     .await
