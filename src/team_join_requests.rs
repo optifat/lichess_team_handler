@@ -61,29 +61,24 @@ pub async fn handle_join_requests(
 
     futures::future::join_all(requests.iter().map(|user| {
         let user_id = &user.user.id;
-        if cheaters.contains(user_id) {
+        let verdict = if cheaters.contains(user_id) {
             declined += 1;
             #[cfg(feature = "full_info")]
             println!("{}: Declined ❌", user_id);
-            client
-                .post(format!(
-                    "https://lichess.org/api/team/{}/request/{}/decline",
-                    team_id, user_id
-                ))
-                .bearer_auth(token)
-                .send()
+            "decline"
         } else {
             approved += 1;
             #[cfg(feature = "full_info")]
             println!("{}: Approved ✅", user_id);
-            client
-                .post(format!(
-                    "https://lichess.org/api/team/{}/request/{}/accept",
-                    team_id, user_id
-                ))
-                .bearer_auth(token)
-                .send()
-        }
+            "accept"
+        };
+        client
+            .post(format!(
+                "https://lichess.org/api/team/{}/request/{}/{}",
+                team_id, user_id, verdict
+            ))
+            .bearer_auth(token)
+            .send()
     }))
     .await
     .into_iter()
